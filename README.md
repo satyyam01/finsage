@@ -44,7 +44,7 @@ FinSage is an end-to-end, explainable AI platform for automated loan application
 
 ### 1. Clone the Repository
 ```bash
-git clone <repo-url>
+git clone https://github.com/satyyam01/finsage
 cd finsage
 ```
 

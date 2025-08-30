@@ -1,4 +1,4 @@
-# FinSage – Explainable AI Loan Approval Platform (LangGraph-Powered)
+# FinSage – Explainable AI Loan Approval Platform
 
 <div align="center">
 

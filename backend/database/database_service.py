@@ -1,16 +1,29 @@
 import bcrypt
 import uuid
 from datetime import datetime, timedelta
+from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from backend.models import User, Session as UserSession, ChatHistory, LoanAnalysis, get_db, generate_session_token
-from backend.config import SESSION_EXPIRY_HOURS
+from sqlalchemy import func
+from backend.models.models import User, Session as UserSession, ChatHistory, LoanAnalysis, get_db, generate_session_token
+from backend.core.config import SESSION_EXPIRY_HOURS
 
 class DatabaseService:
-    """Database service for PostgreSQL operations"""
+    """Database service for SQLite operations"""
     
     def __init__(self):
         self.db = next(get_db())
+        # Ensure tables exist
+        self._ensure_tables_exist()
+    
+    def _ensure_tables_exist(self):
+        """Ensure all database tables exist"""
+        try:
+            from backend.models.models import Base, engine
+            # Create tables if they don't exist
+            Base.metadata.create_all(bind=engine)
+        except Exception as e:
+            print(f"Warning: Could not ensure tables exist: {e}")
     
     def __enter__(self):
         return self
@@ -205,6 +218,13 @@ class DatabaseService:
                           feature_importance: dict = None, insights: str = None) -> dict:
         """Save loan analysis results"""
         try:
+            print(f"🔍 Database: Starting to save loan analysis")
+            print(f"  - user_id: {user_id} (type: {type(user_id)})")
+            print(f"  - analysis_data: {analysis_data} (type: {type(analysis_data)})")
+            print(f"  - prediction: {prediction} (type: {type(prediction)})")
+            print(f"  - feature_importance: {feature_importance} (type: {type(feature_importance)})")
+            print(f"  - insights: {insights} (type: {type(insights)})")
+            
             # Convert numpy types to native Python types
             import numpy as np
             
@@ -228,6 +248,11 @@ class DatabaseService:
             converted_feature_importance = convert_numpy_types(feature_importance) if feature_importance else None
             converted_prediction = convert_numpy_types(prediction)
             
+            print(f"🔍 Database: After conversion:")
+            print(f"  - converted_analysis_data: {converted_analysis_data}")
+            print(f"  - converted_feature_importance: {converted_feature_importance}")
+            print(f"  - converted_prediction: {converted_prediction}")
+            
             loan_analysis = LoanAnalysis(
                 user_id=user_id,
                 analysis_data=converted_analysis_data,
@@ -236,13 +261,23 @@ class DatabaseService:
                 insights=insights
             )
             
+            print(f"🔍 Database: Created LoanAnalysis object: {loan_analysis}")
+            
             self.db.add(loan_analysis)
+            print(f"🔍 Database: Added to session")
+            
             self.db.commit()
+            print(f"🔍 Database: Committed to database")
+            
             self.db.refresh(loan_analysis)
+            print(f"🔍 Database: Refreshed object, got ID: {loan_analysis.id}")
             
             return {"success": True, "analysis_id": loan_analysis.id}
             
         except Exception as e:
+            print(f"❌ Database: Error saving loan analysis: {e}")
+            import traceback
+            traceback.print_exc()
             self.db.rollback()
             return {"success": False, "message": f"Failed to save loan analysis: {str(e)}"}
     
@@ -279,4 +314,90 @@ class DatabaseService:
     def email_exists(self, email: str) -> bool:
         """Check if email exists"""
         user = self.db.query(User).filter(User.email == email).first()
-        return user is not None 
+        return user is not None
+    
+    def save_workflow_state(self, workflow_id: str, state_data: dict, workflow_metadata: dict = None) -> bool:
+        """Save workflow state to database"""
+        try:
+            from backend.models.models import WorkflowState
+            
+            workflow_state = WorkflowState(
+                workflow_id=workflow_id,
+                user_id=state_data.get("user_id"),
+                session_id=state_data.get("session_id"),
+                workflow_type=workflow_metadata.get("workflow_type") if workflow_metadata else "unknown",
+                state_data=state_data,
+                workflow_metadata=workflow_metadata
+            )
+            
+            self.db.add(workflow_state)
+            self.db.commit()
+            self.db.refresh(workflow_state)
+            
+            return True
+            
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error saving workflow state: {e}")
+            return False
+    
+    def get_workflow_state(self, workflow_id: str) -> Optional[dict]:
+        """Get workflow state from database"""
+        try:
+            from backend.models import WorkflowState
+            
+            workflow_state = self.db.query(WorkflowState).filter(
+                WorkflowState.workflow_id == workflow_id
+            ).first()
+            
+            if workflow_state:
+                return workflow_state.state_data
+            return None
+            
+        except Exception as e:
+            print(f"Error getting workflow state: {e}")
+            return None
+    
+    def update_workflow_state(self, workflow_id: str, state_data: dict, workflow_metadata: dict = None) -> bool:
+        """Update workflow state in database"""
+        try:
+            from backend.models import WorkflowState
+            
+            workflow_state = self.db.query(WorkflowState).filter(
+                WorkflowState.workflow_id == workflow_id
+            ).first()
+            
+            if workflow_state:
+                workflow_state.state_data = state_data
+                if workflow_metadata:
+                    workflow_state.workflow_metadata = workflow_metadata
+                workflow_state.updated_at = func.now()
+                
+                self.db.commit()
+                return True
+            return False
+            
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error updating workflow state: {e}")
+            return False
+    
+    def delete_workflow_state(self, workflow_id: str) -> bool:
+        """Delete workflow state from database"""
+        try:
+            from backend.models import WorkflowState
+            
+            workflow_state = self.db.query(WorkflowState).filter(
+                WorkflowState.workflow_id == workflow_id
+            ).first()
+            
+            if workflow_state:
+                self.db.delete(workflow_state)
+                self.db.commit()
+                return True
+            return False
+            
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error deleting workflow state: {e}")
+            return False 

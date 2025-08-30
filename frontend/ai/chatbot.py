@@ -1,10 +1,11 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import streamlit as st
-from backend.backend import LoanInsightsGenerator
-from backend.database_service import DatabaseService
-from backend.config import GROQ_API_KEY
+from backend.ml.ai_service import LoanInsightsGenerator
+from backend.database.database_service import DatabaseService
+from backend.core.config import GROQ_API_KEY
+
 
 def initialize_chat_session():
     """Initialize chat session state variables"""
@@ -17,6 +18,7 @@ def initialize_chat_session():
     # Initialize database service
     if 'db_service' not in st.session_state:
         st.session_state.db_service = DatabaseService()
+
 
 def display_chat_history():
     """Display existing chat messages"""
@@ -40,6 +42,7 @@ def display_chat_history():
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+
 
 def handle_chat_interaction(context):
     """Handle chat input and generate AI responses"""
@@ -87,6 +90,7 @@ def handle_chat_interaction(context):
                 
         except Exception as e:
             st.error(f"Failed to save chat message: {e}")
+
 
 def start_new_chat():
     """Start a new chat session"""

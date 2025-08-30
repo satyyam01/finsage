@@ -7,11 +7,8 @@ import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Database URL from environment
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://finsage_user:finsage_password@localhost:5432/finsage_db")
+# Import database configuration from core module
+from backend.core.config import DATABASE_URL
 
 Base = declarative_base()
 
@@ -32,6 +29,7 @@ class User(Base):
     sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
     chat_histories = relationship("ChatHistory", back_populates="user", cascade="all, delete-orphan")
     loan_analyses = relationship("LoanAnalysis", back_populates="user", cascade="all, delete-orphan")
+    workflow_states = relationship("WorkflowState", back_populates="user", cascade="all, delete-orphan")
 
 class Session(Base):
     """Session model for user session management"""
@@ -59,7 +57,6 @@ class ChatHistory(Base):
     
     # Relationships
     user = relationship("User", back_populates="chat_histories")
-    # Remove session relationship since session_id is now a string
 
 class LoanAnalysis(Base):
     """Loan analysis model for storing analysis results"""
@@ -75,6 +72,36 @@ class LoanAnalysis(Base):
     
     # Relationships
     user = relationship("User", back_populates="loan_analyses")
+
+class WorkflowState(Base):
+    """Workflow state model for LangGraph workflow management"""
+    __tablename__ = 'workflow_states'
+    
+    id = Column(Integer, primary_key=True)
+    workflow_id = Column(String(255), unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    session_id = Column(String(255), nullable=False)
+    workflow_type = Column(String(100), nullable=False)
+    state_data = Column(JSON, nullable=False)
+    workflow_metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    user = relationship("User", back_populates="workflow_states")
+
+class WorkflowExecution(Base):
+    """Workflow execution model for audit trail"""
+    __tablename__ = 'workflow_executions'
+    
+    id = Column(Integer, primary_key=True)
+    workflow_id = Column(String(255), nullable=False)
+    step_name = Column(String(100), nullable=False)
+    input_data = Column(JSON, nullable=True)
+    output_data = Column(JSON, nullable=True)
+    execution_time_ms = Column(Integer, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=func.now())
 
 # Database engine and session factory
 engine = create_engine(DATABASE_URL)

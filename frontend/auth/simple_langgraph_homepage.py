@@ -1,20 +1,21 @@
+"""
+Simple LangGraph Homepage - Exact Same Login/Signup as Original
+"""
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import streamlit as st
 import re
-from backend.database_service import DatabaseService
-
+from backend.database.database_service import DatabaseService
 
 def validate_email(email):
-    """Simple email validation"""
+    """Simple email validation - exactly like original"""
     email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(email_regex, email) is not None
 
-
 def validate_password(password):
     """
-    Password validation:
+    Password validation - exactly like original:
     - At least 8 characters
     - Contains at least one uppercase letter
     - Contains at least one lowercase letter
@@ -27,9 +28,8 @@ def validate_password(password):
             any(c.isdigit() for c in password)
     )
 
-
 def login_page():
-    """Login page UI"""
+    """Login page UI - exactly like original"""
     st.title("🏦Login to Finsage")
 
     # Initialize database
@@ -61,9 +61,8 @@ def login_page():
         st.session_state.page = 'signup'
         st.rerun()
 
-
 def signup_page():
-    """Signup page UI"""
+    """Signup page UI - exactly like original"""
     st.title("🏦 Loan Approval Prediction App - Sign Up")
 
     # Initialize database
@@ -102,8 +101,8 @@ def signup_page():
         st.session_state.page = 'login'
         st.rerun()
 
-
 def homepage():
+    """Homepage UI - exactly like original"""
     st.markdown("""
         <style>
         .finsage-header {
@@ -181,8 +180,8 @@ def homepage():
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="finsage-header">FinSage: Explainable AI Loan Approval</div>', unsafe_allow_html=True)
-    st.markdown('<div class="finsage-tagline">Instant, transparent, and actionable loan insights powered by AI and explainable machine learning.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="finsage-header">FinSage: Explainable AI Loan Approval (LangGraph)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="finsage-tagline">Instant, transparent, and actionable loan insights powered by AI, explainable machine learning, and LangGraph workflows.</div>', unsafe_allow_html=True)
 
     st.markdown("""
         <div class="feature-row">
@@ -204,6 +203,17 @@ def homepage():
         </div>
     """, unsafe_allow_html=True)
 
+    # Add LangGraph feature card
+    st.markdown("""
+        <div class="feature-row">
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <div class="feature-title">LangGraph Workflows</div>
+                <div class="feature-desc">Advanced workflow orchestration for seamless loan analysis and intelligent decision making.</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
     # Centered blue Streamlit buttons
     st.markdown('<div class="center-btn-row">', unsafe_allow_html=True)
     center = st.columns([1, 2, 1])[1]
@@ -219,9 +229,8 @@ def homepage():
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-
 def main():
-    """Main application flow"""
+    """Main application flow - exactly like original but routes to LangGraph app"""
     # Initialize session state variables if not exist
     if 'page' not in st.session_state:
         st.session_state.page = 'home'
@@ -231,8 +240,8 @@ def main():
 
     # Routing based on session state
     if st.session_state.logged_in:
-        # Import the main app here to avoid circular imports
-        from frontend.app import main as app_main
+        # Import the LangGraph app here to avoid circular imports
+        from frontend.core.simple_langgraph_app import main as app_main
         app_main()
     else:
         # Routing for authentication pages
@@ -243,6 +252,5 @@ def main():
         elif st.session_state.page == 'signup':
             signup_page()
 
-
 if __name__ == "__main__":
-    main()
+    main() 

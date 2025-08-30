@@ -8,7 +8,8 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Database Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://finsage_user:finsage_password@localhost:5432/finsage_db")
+# Use SQLite by default for local development
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///users.db")
 DATABASE_HOST = os.getenv("DATABASE_HOST", "localhost")
 DATABASE_PORT = os.getenv("DATABASE_PORT", "5432")
 DATABASE_NAME = os.getenv("DATABASE_NAME", "finsage_db")
